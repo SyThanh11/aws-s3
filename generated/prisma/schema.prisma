@@ -1,0 +1,36 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model File {
+  id        Int      @id @default(autoincrement()) @db.UnsignedInt
+  url       String   @unique // URL from S3 
+  key       String // S3 object key
+  type      FileType
+  size      Int // Kích thước file
+  mimeType  String // Kiểu MIME: image/png, video/mp4, ...
+  name      String // Tên gốc của file
+  createdAt DateTime @default(now())
+
+  @@map("files")
+}
+
+enum FileType {
+  IMAGE
+  VIDEO
+  DOCUMENT
+  AUDIO
+  OTHER
+}
