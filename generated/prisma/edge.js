@@ -136,7 +136,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "D:\\hmd\\aws-s3\\generated\\prisma",
+      "value": "D:\\aws-s3\\generated\\prisma",
       "fromEnvVar": null
     },
     "config": {
@@ -150,11 +150,11 @@ const config = {
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "D:\\hmd\\aws-s3\\prisma\\schema.prisma",
+    "sourceFilePath": "D:\\aws-s3\\prisma\\schema.prisma",
     "isCustomOutput": true
   },
   "relativeEnvPaths": {
-    "rootEnvPath": "../../.env",
+    "rootEnvPath": null,
     "schemaEnvPath": "../../.env"
   },
   "relativePath": "../../prisma",
@@ -168,7 +168,7 @@ const config = {
     "db": {
       "url": {
         "fromEnvVar": "DATABASE_URL",
-        "value": "mysql://root:root@localhost:3306/aws-s3"
+        "value": "mysql://root:123456@127.0.0.1:3306/aws-s3"
       }
     }
   },

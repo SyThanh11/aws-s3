@@ -3,6 +3,7 @@ import { AwsS3Controller } from './aws-s3.controller';
 import { AwsS3Service } from './aws-s3.service';
 import { MulterModule } from '@nestjs/platform-express';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { UPLOADED_FILE_SERVICE } from './const/consts';
 
 @Module({
   imports: [
@@ -15,6 +16,13 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
     })
   ],
   controllers: [AwsS3Controller],
-  providers: [AwsS3Service]
+  providers: [
+    AwsS3Service,
+    {
+      provide: UPLOADED_FILE_SERVICE,
+      useExisting: AwsS3Service
+    }
+  ],
+  exports: [UPLOADED_FILE_SERVICE]
 })
 export class AwsS3Module {}
