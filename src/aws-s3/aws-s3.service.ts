@@ -5,12 +5,17 @@ import { ConfigService } from '@nestjs/config';
 import * as sharp from 'sharp';
 import { createReadStream, promises as fs } from 'fs';
 import { Upload } from '@aws-sdk/lib-storage';
+import { PrismaService } from 'src/prisma/prisma.service';
+import { FileType } from 'generated/prisma';
 
 @Injectable()
 export class AwsS3Service implements UploadedFileServiceInterface {
     private readonly s3Client: S3Client
 
-    constructor(private readonly configService: ConfigService) {
+    constructor(
+        private readonly configService: ConfigService,
+        private readonly prisma: PrismaService
+    ) {
         const region = this.configService.get<string>('AWS_S3_REGION');
         const accessKeyId = this.configService.get<string>('AWS_S3_ACCESS_KEY');
         const secretAccessKey = this.configService.get<string>('AWS_S3_SECRET_ACCESS_KEY');
@@ -67,13 +72,37 @@ export class AwsS3Service implements UploadedFileServiceInterface {
 
         await fs.unlink(file.path)
 
-        return {
-            url: `https://${bucketName}.s3.amazonaws.com/${key}`,
-            key
-        };
+        const url = `https://${bucketName}.s3.amazonaws.com/${key}`;
+
+        await this.prisma.$transaction(async (tx) => {
+            await tx.file.create({
+              data: {
+                key,
+                url,
+                name: file.originalname,
+                size: file.size,
+                mimeType: file.mimetype,
+                type: this.getFileType(file.mimetype)
+              },
+            });
+        });
+
+        return { url, key };
        } catch (error) {
             console.error('S3 upload error:', error);
             throw new InternalServerErrorException('Failed to upload image');
        }
+    }
+
+    private getFileType(mime: string): FileType {
+        if (mime.startsWith('image/')) return FileType.IMAGE;
+        if (mime.startsWith('video/')) return FileType.VIDEO;
+        if (mime.startsWith('audio/')) return FileType.AUDIO;
+        if (
+          mime === 'application/pdf' ||
+          mime.startsWith('application/')
+        )
+          return FileType.DOCUMENT;
+        return FileType.OTHER;
     }
 }
