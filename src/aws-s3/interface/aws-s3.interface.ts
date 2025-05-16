@@ -1,6 +1,5 @@
 export interface UploadedFileServiceInterface {
     uploadFileToPublicBucket(
-        path: string,
-        { file, fileName }: { file: Express.Multer.File; fileName: string }
+        file: Express.Multer.File
     ): Promise<{ url: string; key: string }>
 }

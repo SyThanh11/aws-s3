@@ -4,13 +4,21 @@ import { AwsS3Service } from './aws-s3.service';
 import { MulterModule } from '@nestjs/platform-express';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { UPLOADED_FILE_SERVICE } from './const/consts';
+import { diskStorage } from 'multer';
 
 @Module({
   imports: [
     MulterModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
-        dest: configService.get<string>('MULTER_DEST')
+        storage: diskStorage({
+          destination: configService.get<string>('MULTER_DEST'),
+          filename: (_req, file, cb) => {
+            const uniqueName = `${Date.now()}-${file.originalname}`;
+            cb(null, uniqueName);
+          }
+        }),
+        limits: {}
       }),
       inject: [ConfigService]
     })

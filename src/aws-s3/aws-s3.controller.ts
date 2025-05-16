@@ -1,7 +1,6 @@
 import { Controller, HttpStatus, ParseFilePipeBuilder, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { AwsS3Service } from './aws-s3.service';
 import { FileInterceptor } from '@nestjs/platform-express';
-import * as multer from 'multer';
 
 @Controller('aws-s3')
 export class AwsS3Controller {
@@ -16,15 +15,15 @@ export class AwsS3Controller {
      * @param path - Thư mục lưu trong bucket (query string)
      */
     @Post('upload')
-    @UseInterceptors(FileInterceptor('file', { storage: multer.memoryStorage() }))
+    @UseInterceptors(FileInterceptor('file'))
     async uploadFile(
         @UploadedFile(
             new ParseFilePipeBuilder()
-                .addFileTypeValidator(
-                    {
-                        fileType: /^(image\/(jpeg|png|jpg)|application\/pdf)$/,
-                    }
-                )
+                // .addFileTypeValidator(
+                //     {
+                //         fileType: /^(image\/(jpeg|png|jpg)|application\/pdf)$/,
+                //     }
+                // )
                 .build({
                     errorHttpStatusCode: HttpStatus.UNPROCESSABLE_ENTITY
                 })
@@ -34,14 +33,6 @@ export class AwsS3Controller {
             throw new Error('File is required');
         }
 
-        const fileName = file.originalname;
-
-        return this.awsS3Service.uploadFileToPublicBucket(
-            'upload',
-            {
-                file,
-                fileName,
-            }
-        );
+        return this.awsS3Service.uploadFileToPublicBucket(file);
     }
 }

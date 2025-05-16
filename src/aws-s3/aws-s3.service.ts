@@ -1,8 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { UploadedFileServiceInterface } from './interface/aws-s3.interface';
-import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { S3Client } from '@aws-sdk/client-s3';
 import { ConfigService } from '@nestjs/config';
 import * as sharp from 'sharp';
+import { createReadStream, promises as fs } from 'fs';
+import { Upload } from '@aws-sdk/lib-storage';
 
 @Injectable()
 export class AwsS3Service implements UploadedFileServiceInterface {
@@ -39,35 +41,39 @@ export class AwsS3Service implements UploadedFileServiceInterface {
      *    @property key - Khóa (key) của tệp trong bucket S3.
      */
     async uploadFileToPublicBucket(
-        path: string, 
-        { file, fileName }: { file: Express.Multer.File; fileName: string; }): Promise<{ url: string; key: string }> {
+       file: Express.Multer.File
+    ): Promise<{ url: string; key: string }> {
+       try {
         const bucketName = this.configService.get<string>('AWS_S3_PUBLIC_BUCKET');
+        const key = `${Date.now()}-${file.originalname}`;
 
-        console.log(file);
-        console.log(file.buffer instanceof Buffer); // phải true
-        console.log(file.size);
 
-        const optimizedBuffer = await sharp(file.buffer)
-            .resize({ width: 1200 })
-            .jpeg({ quality: 70 })
-            .toBuffer();
-
-        const key = `${path}/${Date.now().toString()} - ${fileName}}`;
+        const readStream = createReadStream(file.path);
+        const transform = sharp()
+            .jpeg({ quality: 100 }) 
         
-        await this.s3Client.send(
-            new PutObjectCommand({
+        const upload = new Upload({
+            client: this.s3Client,
+            params: {
                 Bucket: bucketName,
                 Key: key,
-                Body: optimizedBuffer,
-                ContentType: file.mimetype,
+                Body: readStream.pipe(transform),
+                ContentType: 'image/jpeg',
                 ACL: 'public-read',
-                ContentLength: optimizedBuffer.length
-            })
-        )
+            },
+        });
+
+        await upload.done();
+
+        await fs.unlink(file.path)
 
         return {
             url: `https://${bucketName}.s3.amazonaws.com/${key}`,
             key
         };
+       } catch (error) {
+            console.error('S3 upload error:', error);
+            throw new InternalServerErrorException('Failed to upload image');
+       }
     }
 }
